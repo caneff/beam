@@ -190,6 +190,7 @@ class _AbstractFrameTest(unittest.TestCase):
         else:
           expected = expected.sort_values(list(expected.columns))
           actual = actual.sort_values(list(actual.columns))
+      print(f"!!\nexpected:\n{expected}\nactual:\n{actual}\n!!")
       if isinstance(expected, pd.Series):
         if lenient_dtype_check:
           pd.testing.assert_series_equal(
@@ -319,6 +320,13 @@ class DeferredFrameTest(_AbstractFrameTest):
         lambda df: df.num_legs.xs(('bird', 'walks'), level=[0, 'locomotion']),
         df)
 
+    df_single_index = df.reset_index().set_index('class')
+
+    # Passes because Pandas xs returns a series (multiple matches for 'mammal')
+    self._run_test(lambda df: df.num_legs.xs('mammal'), df_single_index)
+    # Fails because Pandas xs returns a scalar (single match for 'bird')
+    self._run_test(lambda df: df.num_legs.xs('bird'), df_single_index)
+
   def test_dataframe_xs(self):
     # Test cases reported in BEAM-13421
     df = pd.DataFrame(
@@ -330,7 +338,24 @@ class DeferredFrameTest(_AbstractFrameTest):
         ]),
         columns=['provider', 'time', 'value'])
 
+    # Passes because Pandas xs returns a frame (multiple matches for 'state')
     self._run_test(lambda df: df.xs('state'), df.set_index(['provider']))
+    # Fails because Pandas xs returns a series (single match for 'county')
+    self._run_test(lambda df: df.xs('county'), df.set_index(['provider']))
+
+    # Passes because even though only one thing is selected, xs returns a
+    # DataFrame because of the multiindex levels remaining
+    self._run_test(
+        lambda df: df.xs('county'), df.set_index(['provider', 'time']))
+    # Passes because Pandas x returns a frame (multiple matches for ('state',
+    # 'day1')
+    self._run_test(
+        lambda df: df.xs(('state', 'day1')), df.set_index(['provider', 'time']))
+    # Fails because no levels left in index (unlike the 'county' case above)
+    # and only returns one item.
+    self._run_test(
+        lambda df: df.xs(('state', 'day2')), df.set_index(['provider', 'time']))
+
     self._run_test(
         lambda df: df.xs('state'), df.set_index(['provider', 'time']))
 
