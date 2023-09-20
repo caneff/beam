@@ -190,7 +190,6 @@ class _AbstractFrameTest(unittest.TestCase):
         else:
           expected = expected.sort_values(list(expected.columns))
           actual = actual.sort_values(list(actual.columns))
-      print(f"!!\nexpected:\n{expected}\nactual:\n{actual}\n!!")
       if isinstance(expected, pd.Series):
         if lenient_dtype_check:
           pd.testing.assert_series_equal(
