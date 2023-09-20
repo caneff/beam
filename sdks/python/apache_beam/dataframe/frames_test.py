@@ -319,6 +319,13 @@ class DeferredFrameTest(_AbstractFrameTest):
         lambda df: df.num_legs.xs(('bird', 'walks'), level=[0, 'locomotion']),
         df)
 
+    df_single_index = df.reset_index().set_index('class')
+
+    # Passes because Pandas xs returns a series (multiple matches for 'mammal')
+    self._run_test(lambda df: df.num_legs.xs('mammal'), df_single_index)
+    # Fails because Pandas xs returns a scalar (single match for 'bird')
+    self._run_test(lambda df: df.num_legs.xs('bird'), df_single_index)
+
   def test_dataframe_xs(self):
     # Test cases reported in BEAM-13421
     df = pd.DataFrame(
@@ -330,7 +337,10 @@ class DeferredFrameTest(_AbstractFrameTest):
         ]),
         columns=['provider', 'time', 'value'])
 
+    # Passes because Pandas xs returns a frame (multiple matches for 'state')
     self._run_test(lambda df: df.xs('state'), df.set_index(['provider']))
+    # Fails because Pandas xs returns a series (single match for 'county')
+    self._run_test(lambda df: df.xs('county'), df.set_index(['provider']))
     self._run_test(
         lambda df: df.xs('state'), df.set_index(['provider', 'time']))
 
