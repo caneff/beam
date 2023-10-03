@@ -23,6 +23,7 @@ import collections
 import hashlib
 import inspect
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -168,8 +169,8 @@ class ExternalProvider(Provider):
           self.schema_transforms()[self._urns[type]].configuration_schema)
 
   def requires_inputs(self, typ, args):
-    if self._urns[type] in self.schema_transforms():
-      return bool(self.schema_transforms()[self._urns[type]].inputs)
+    if self._urns[typ] in self.schema_transforms():
+      return bool(self.schema_transforms()[self._urns[typ]].inputs)
     else:
       return super().requires_inputs(typ, args)
 
@@ -580,18 +581,13 @@ def create_builtin_provider():
       # TODO: Triggering, etc.
       return beam.WindowInto(window_fn)
 
+  def log_and_return(x):
+    logging.info(x)
+    return x
+
   return InlineProvider({
       'Create': create,
-      'PyMap': lambda fn: beam.Map(
-          python_callable.PythonCallableWithSource(fn)),
-      'PyMapTuple': lambda fn: beam.MapTuple(
-          python_callable.PythonCallableWithSource(fn)),
-      'PyFlatMap': lambda fn: beam.FlatMap(
-          python_callable.PythonCallableWithSource(fn)),
-      'PyFlatMapTuple': lambda fn: beam.FlatMapTuple(
-          python_callable.PythonCallableWithSource(fn)),
-      'PyFilter': lambda keep: beam.Filter(
-          python_callable.PythonCallableWithSource(keep)),
+      'LogForTesting': lambda: beam.Map(log_and_return),
       'PyTransform': fully_qualified_named_transform,
       'WithSchemaExperimental': with_schema,
       'Flatten': Flatten,
