@@ -962,12 +962,16 @@ class DeferredFrameTest(_AbstractFrameTest):
          [np.nan, 3, np.nan, 4], [3, np.nan, np.nan, 4]],
         columns=list('ABCD'))
 
-    self._run_test(lambda df: df.fillna(method='ffill', axis='columns'), df)
-    self._run_test(
-        lambda df: df.fillna(method='ffill', axis='columns', limit=1), df)
-    self._run_test(
-        lambda df: df.fillna(method='bfill', axis='columns', limit=1), df)
-
+    if PD_VERSION < (2, 1):
+      self._run_test(lambda df: df.fillna(method='ffill', axis='columns'), df)
+      self._run_test(
+          lambda df: df.fillna(method='ffill', axis='columns', limit=1), df)
+      self._run_test(
+          lambda df: df.fillna(method='bfill', axis='columns', limit=1), df)
+    else:
+      self._run_test(lambda df: df.ffill(axis='columns'), df)
+      self._run_test(lambda df: df.ffill(axis='columns', limit=1), df)
+      self._run_test(lambda df: df.bfill(axis='columns', limit=1), df)
     # Intended behavior is unclear here. See
     # https://github.com/pandas-dev/pandas/issues/40989
     # self._run_test(lambda df: df.fillna(axis='columns', value=100,

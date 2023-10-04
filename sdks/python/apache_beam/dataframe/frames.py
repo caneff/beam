@@ -93,7 +93,7 @@ def populate_not_implemented(pd_type):
 
 def _fillna_alias(method):
   def wrapper(self, *args, **kwargs):
-    return self.fillna(*args, method=method, **kwargs)
+    return getattr(self, method)(*args, **kwargs)
 
   wrapper.__name__ = method
   wrapper.__doc__ = (
@@ -275,6 +275,10 @@ class DeferredDataFrameOrSeries(frame_base.DeferredFrame):
     # Default value is None, but is overriden with index.
     axis = axis or 'index'
 
+    # The method argument is deprecated in 2.1, and the new default is just
+    # None after raising a deprecation warning anyway.
+    method = None if method == lib.no_default else method
+
     if axis in (0, 'index'):
       if method is not None:
         raise frame_base.WontImplementError(
@@ -327,8 +331,8 @@ class DeferredDataFrameOrSeries(frame_base.DeferredFrame):
             lambda df,
             value: df.fillna(
                 get_value(value),
-                method=method,
                 axis=axis,
+                method=method,
                 limit=limit,
                 **kwargs), [self._expr, value_expr],
             preserves_partition_by=partitionings.Arbitrary(),
@@ -5045,7 +5049,7 @@ class _DeferredStringMethods(frame_base.DeferredBase):
             'get_dummies',
             lambda series: pd.concat(
               [proxy, series.str.get_dummies(**kwargs)]
-              ).fillna(value=0, method=None).astype('int64'),
+              ).fillna(value=0).astype('int64'),
             [self._expr],
             proxy=proxy,
             requires_partition_by=partitionings.Arbitrary(),
